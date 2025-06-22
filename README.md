@@ -1,49 +1,53 @@
 Overview
 ========
+In this project, I'm developing an AWS-based data pipeline utilizing airflow, python, AWS services. The objective is to Get historical OHLC data from [yfinanceAPI]https://github.com/ranaroussi/yfinance we :
+- We’re pulling 1-minute timeframe data (but it’s adjustable) for the past 7 days.
+- Using Python to transform data into the format we want
+- And finally, store it on AWS S3
 
-This is new image from uploading to github issue
-![Image](https://github.com/user-attachments/assets/ca44a0b6-2797-454c-9aee-f300e32ddd10)
+![Image](https://github.com/user-attachments/assets/e6248be0-0f7b-4ebb-b1ae-4519f1ecf6bb)
 
-
-Welcome to Astronomer! This project was generated after you ran 'astro dev init' using the Astronomer CLI. This readme describes the contents of the project, as well as how to run Apache Airflow on your local machine.
 
 Project Contents
 ================
+## Variable
+<img width="600" alt="Image" src="https://github.com/user-attachments/assets/7ec66d9e-af54-4d0f-bcbb-0c1b26bfe563" />
 
-Your Astro project contains the following files and folders:
+defind variable as dictionary
+- stock_list : list of stock list (we can add more stock name to fetch the data)
+- TF : Time Frame of OHLC historical data 
+- duration_date_number : Duration to fetch data as number
 
-- dags: This folder contains the Python files for your Airflow DAGs. By default, this directory includes one example DAG:
-    - `example_astronauts`: This DAG shows a simple ETL pipeline example that queries the list of astronauts currently in space from the Open Notify API and prints a statement for each astronaut. The DAG uses the TaskFlow API to define tasks in Python, and dynamic task mapping to dynamically print a statement for each astronaut. For more on how this DAG works, see our [Getting started tutorial](https://www.astronomer.io/docs/learn/get-started-with-airflow).
-- Dockerfile: This file contains a versioned Astro Runtime Docker image that provides a differentiated Airflow experience. If you want to execute other commands or overrides at runtime, specify them here.
-- include: This folder contains any additional files that you want to include as part of your project. It is empty by default.
-- packages.txt: Install OS-level packages needed for your project by adding them to this file. It is empty by default.
-- requirements.txt: Install Python packages needed for your project by adding them to this file. It is empty by default.
-- plugins: Add custom or community plugins for your project to this file. It is empty by default.
-- airflow_settings.yaml: Use this local-only file to specify Airflow Connections, Variables, and Pools instead of entering them in the Airflow UI as you develop DAGs in this project.
+- BUCKETNAME : our bucket name
 
-Deploy Your Project Locally
-===========================
+## Connection
+<img width="600" alt="image" src="https://github.com/user-attachments/assets/45d628a9-408a-4835-aade-b466335e230f" />
 
-Start Airflow on your local machine by running 'astro dev start'.
+S3 AWS connection
+- aws_access_key_id
+- aws_secret_access_key
+- region_name
 
-This command will spin up five Docker containers on your machine, each for a different Airflow component:
+## Folder S3 Bucket Design
+![image](https://github.com/user-attachments/assets/63d4b3d8-7ec2-4605-9c1a-49fc7ecbeac9)
 
-- Postgres: Airflow's Metadata Database
-- Scheduler: The Airflow component responsible for monitoring and triggering tasks
-- DAG Processor: The Airflow component responsible for parsing DAGs
-- API Server: The Airflow component responsible for serving the Airflow UI and API
-- Triggerer: The Airflow component responsible for triggering deferred tasks
+Each S3 bucket is organized by date folders (one folder per day), and inside each date folder, the data is further separated by stock symbol — so each stock has its own folder.
 
-When all five containers are ready the command will open the browser to the Airflow UI at http://localhost:8080/. You should also be able to access your Postgres Database at 'localhost:5432/postgres' with username 'postgres' and password 'postgres'.
+Deploy Your Project
+===================
 
-Note: If you already have either of the above ports allocated, you can either [stop your existing Docker containers or change the port](https://www.astronomer.io/docs/astro/cli/troubleshoot-locally#ports-are-not-available-for-my-local-airflow-webserver).
+First of all we have to load folder from command 
 
-Deploy Your Project to Astronomer
-=================================
+```astro dev init```
 
-If you have an Astronomer account, pushing code to a Deployment on Astronomer is simple. For deploying instructions, refer to Astronomer documentation: https://www.astronomer.io/docs/astro/deploy-code/
+Start Airflow on your local machine by running 
 
-Contact
-=======
+```astro dev start```
 
-The Astronomer CLI is maintained with love by the Astronomer team. To report a bug or suggest a change, reach out to our support.
+Problem
+===================
+1. Log appearance : We couldn’t see the logs in Airflow webserver, so we had to update the airflow-setting.yml to enable log display.
+2. XCOM : Since Airflow v2.3, it tries to serialize/deserialize DataFrames when passing data between tasks via XCom.
+   By default, If we're sending a DataFrame through XCom, Airflow prefers using pyarrow (or a Pandas serializer that supports pyarrow). If your environment doesn't have pyarrow installed, you’ll either need to:
+   - Install the pyarrow library
+   - Change the way you're sending data — for example, convert your DataFrame to JSON before pushing it to XCom.
