@@ -3,7 +3,6 @@
 .DS_Store
 .dockerignore
 .astro
-airflow_settings.yaml
 __pycache__/
 astro
 .venv
